@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องมือจำลองเสถียรภาพกำแพงกันดิน</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        .table-scroll::-webkit-scrollbar { height: 8px; }
+        .table-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased font-sans">
+
+    <!-- Navbar -->
+    <nav class="bg-slate-800 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-square-poll-vertical text-blue-400 text-xl"></i>
+                    <span class="font-semibold text-lg hidden md:block">เครื่องมือจำลองและรายการคำนวณเสถียรภาพกำแพงกันดิน (Interactive)</span>
+                    <span class="font-semibold text-base md:hidden">คำนวณเสถียรภาพกำแพงกันดิน</span>
+                </div>
+                <div>
+                    <span class="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">แอปพลิเคชันจำลองคำนวณสด</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Layout -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- SIDEBAR CONTROLS -->
+        <section class="lg:col-span-4 space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-20 max-h-[85vh] overflow-y-auto table-scroll">
+                <h3 class="font-bold text-slate-800 mb-4 text-lg border-b border-slate-100 pb-2 flex items-center">
+                    <i class="fa-solid fa-sliders text-blue-500 mr-2"></i> ปรับพารามิเตอร์ออกแบบ
+                </h3>
+                
+                <div class="space-y-5">
+                    <!-- Category 1 -->
+                    <div>
+                        <h4 class="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">1. คุณสมบัติดินและน้ำ</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาแน่นดินถม (&gamma;<sub>compact</sub>) [กก./ม.³]</label>
+                                <input type="number" id="gamma_compact" value="1900" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาแน่นดินอิ่มตัว (&gamma;<sub>sat</sub>) [กก./ม.³]</label>
+                                <input type="number" id="gamma_sat" value="2100" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาแน่นน้ำ (&gamma;<sub>w</sub>) [กก./ม.³]</label>
+                                <input type="number" id="gamma_w" value="1000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">มุมเสียดทานดิน (&phi;) [องศา]</label>
+                                <input type="number" id="phi" value="30" min="0" max="45" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">น้ำหนักบรรทุกจร Surcharge (q) [กก./ม.²]</label>
+                                <input type="number" id="q" value="1000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 2 -->
+                    <div class="border-t border-slate-100 pt-4">
+                        <h4 class="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">2. ขนาดโครงสร้างคอนกรีต</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความสูงรวมกำแพงกันดิน (H) [ม.]</label>
+                                <input type="number" id="H" value="4.50" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div class="bg-blue-50/50 p-2 rounded border border-blue-100">
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาฐานรากฝั่งดิน (t<sub>heel</sub>) [ม.] <span class="text-[10px] text-blue-500 font-normal ml-1">(ใส่ 0 หากไม่มี Heel)</span></label>
+                                <input type="number" id="t_heel" value="0.50" step="0.05" min="0" class="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนากำแพงหลัก/ผนังขวา (w<sub>stem</sub>) [ม.]</label>
+                                <input type="number" id="w_stem" value="0.25" step="0.05" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความกว้างภายในรางระบายน้ำ (w<sub>u_ditch</sub>) [ม.]</label>
+                                <input type="number" id="w_u_ditch" value="1.50" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาพื้นฐานรางน้ำ (t<sub>u_base</sub>) [ม.]</label>
+                                <input type="number" id="t_u_base" value="0.25" step="0.05" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความหนาผนังรางน้ำฝั่งดิน (w<sub>wall</sub>) [ม.]</label>
+                                <input type="number" id="w_wall" value="0.25" step="0.05" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความสูงผนังรางน้ำฝั่งดิน (h<sub>wall</sub>) [ม.]</label>
+                                <input type="number" id="h_wall" value="1.50" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ระดับความลึกของน้ำในราง (h<sub>water</sub>) [ม.]</label>
+                                <input type="number" id="h_water" value="1.50" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category 3 -->
+                    <div class="border-t border-slate-100 pt-4">
+                        <h4 class="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">3. ระยะห่างเชิงพิกัด</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ระยะความกว้างของช่วงตอม่อ (L) [ม.]</label>
+                                <input type="number" id="L" value="1.00" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ระยะห่างเสาเข็มแถวหน้า-แถวหลัง (L<sub>pile</sub>) [ม.]</label>
+                                <input type="number" id="l_pile" value="1.25" step="0.05" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ความยาวฐานรากฝั่งดิน (L<sub>heel</sub>) [ม.]</label>
+                                <input type="text" id="l_heel_display" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm font-mono text-slate-500 cursor-not-allowed" />
+                                <p class="text-[10px] text-slate-400 mt-1"><i class="fa-solid fa-calculator mr-1"></i>อัตโนมัติ: L<sub>pile</sub> + 0.6 (เมื่อมี t<sub>heel</sub>)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CALCULATION RESULTS -->
+        <section class="lg:col-span-8 space-y-8">
+            
+            <!-- Hero Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-8 rounded-2xl shadow-sm relative overflow-hidden">
+                <div class="absolute right-0 top-0 translate-x-8 -translate-y-8 text-white/5 text-9xl font-black">ENGINE</div>
+                <h1 class="text-2xl sm:text-3xl font-bold mb-2">จำลองวิเคราะห์ทางวิศวกรรม</h1>
+                <p class="text-blue-100 text-sm sm:text-base">ทดสอบการแปรผันของค่าพารามิเตอร์เพื่อตรวจสอบจุดวิกฤตของโครงสร้างในทันที</p>
+                <div class="mt-4 inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-xs px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-arrows-spin mr-1 animate-spin text-cyan-300"></i> โหมดคำนวณอัตโนมัติ (Live Recalculation)
+                </div>
+            </div>
+
+            <!-- Canvas Section -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-l-4 border-indigo-500 pl-3 mb-2">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-vector-square text-indigo-500 mr-2"></i> ภาพจำลองหน้าตัดโครงสร้าง (Interactive Diagram)
+                    </h3>
+                </div>
+                <div class="w-full relative bg-slate-50 rounded-xl border border-slate-200 overflow-hidden" id="canvas-container">
+                    <canvas id="wallCanvas" class="w-full h-[350px] cursor-crosshair block"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center"><i class="fa-solid fa-info-circle mr-1"></i>รูปภาพเปลี่ยนแปลงตามสัดส่วนจริง (To Scale) อัตโนมัติเมื่อปรับพารามิเตอร์</p>
+            </div>
+
+            <!-- F.S. Summary Card -->
+            <div id="fs_card" class="border-2 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-colors duration-300">
+                <div class="absolute right-0 bottom-0 opacity-5">
+                    <i id="fs_icon" class="fa-solid text-9xl"></i>
+                </div>
+                <div class="relative z-10 text-center sm:text-left">
+                    <h4 class="font-bold text-gray-800 text-lg mb-1">ความปลอดภัยต่อการพลิกคว่ำ (Factor of Safety)</h4>
+                    <p class="font-mono text-xs text-gray-500 bg-slate-50 border px-3 py-1 rounded inline-block mt-1">
+                        F.S. = &Sigma;M<sub>R</sub> / &Sigma;M<sub>O</sub> = <span id="eq_mr">-</span> / <span id="eq_mo">-</span>
+                    </p>
+                </div>
+                <div class="relative z-10 flex flex-col items-center sm:items-end">
+                    <div class="flex items-center gap-3 mb-1">
+                        <span id="fs_val" class="text-5xl font-black tracking-tighter">-</span>
+                        <div id="status_badge" class="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center"></div>
+                    </div>
+                    <span class="text-xs text-gray-500">(เกณฑ์ควบคุมด้านความปลอดภัยต้อง &ge; 1.50)</span>
+                </div>
+            </div>
+
+            <!-- Section 1: Lateral Pressures -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center border-l-4 border-blue-500 pl-3">
+                    <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-sm font-mono mr-2">1</span> หน่วยแรงดันดินด้านข้าง (Lateral Pressures)
+                </h3>
+                <p class="text-slate-500 text-xs font-medium">สัมประสิทธิ์แรงดันดินแบบกระตุ้น (Active Pressure) K<sub>a</sub> = <span id="ka_factor">0.333</span></p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-xs text-slate-500 block font-medium">p₁ (จาก Surcharge)</span>
+                        <span id="formula_p1" class="text-[10px] text-slate-400 font-mono block mt-1"></span>
+                        <div class="mt-2 flex items-baseline">
+                            <span id="calc_p1" class="text-xl font-bold text-slate-800">-</span>
+                            <span class="text-[10px] text-slate-400 font-medium ml-1">กก./ม.²</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-xs text-slate-500 block font-medium">p₃ (จากดินเปียกใต้น้ำ)</span>
+                        <span id="formula_p3" class="text-[10px] text-slate-400 font-mono block mt-1"></span>
+                        <div class="mt-2 flex items-baseline">
+                            <span id="calc_p3" class="text-xl font-bold text-slate-800">-</span>
+                            <span class="text-[10px] text-slate-400 font-medium ml-1">กก./ม.²</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-xs text-slate-500 block font-medium">p₄ (จากแรงดันน้ำสถิต)</span>
+                        <span id="formula_p4" class="text-[10px] text-slate-400 font-mono block mt-1"></span>
+                        <div class="mt-2 flex items-baseline">
+                            <span id="calc_p4" class="text-xl font-bold text-slate-800">-</span>
+                            <span class="text-[10px] text-slate-400 font-medium ml-1">กก./ม.²</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Driving Table -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center border-l-4 border-blue-500 pl-3">
+                    <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-sm font-mono mr-2">2</span> แรงผลักและโมเมนต์พลิกคว่ำรอบจุดหมุน
+                </h3>
+                <div class="overflow-x-auto table-scroll">
+                    <table class="min-w-full text-sm text-left whitespace-nowrap">
+                        <thead class="bg-red-50 text-red-800 border-b border-red-100">
+                            <tr>
+                                <th class="py-3 px-4 font-semibold">แรงผลักดัน (Driving Side)</th>
+                                <th class="py-3 px-4 font-semibold text-right">แรง P (กก.)</th>
+                                <th class="py-3 px-4 text-right font-semibold">ระยะแขน y (ม.)</th>
+                                <th class="py-3 px-4 font-semibold text-right">โมเมนต์ M<sub>O</sub> (กก.-ม.)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr>
+                                <td class="py-3 px-4 font-medium">P₁ (Surcharge)</td>
+                                <td id="tbl_f_p1" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_a_p1" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_m_p1" class="py-3 px-4 text-right font-semibold font-mono text-slate-800">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-medium">P₃ (ดินใต้น้ำ)</td>
+                                <td id="tbl_f_p3" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_a_p3" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_m_p3" class="py-3 px-4 text-right font-semibold font-mono text-slate-800">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4 font-medium">P₄ (แรงดันน้ำสถิต)</td>
+                                <td id="tbl_f_p4" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_a_p4" class="py-3 px-4 text-right font-mono">-</td>
+                                <td id="tbl_m_p4" class="py-3 px-4 text-right font-semibold font-mono text-slate-800">-</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-red-50/50">
+                            <tr class="font-bold text-red-900 border-t border-red-100">
+                                <td class="py-4 px-4 text-right">รวมแรงผลักและโมเมนต์คว่ำสะสม:</td>
+                                <td id="sum_f_driving" class="py-4 px-4 text-right font-mono">-</td>
+                                <td class="py-4 px-4 text-right">-</td>
+                                <td id="sum_m_driving" class="py-4 px-4 text-right font-mono text-base text-red-700">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 3: Resisting Table -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center border-l-4 border-blue-500 pl-3">
+                    <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-sm font-mono mr-2">3</span> น้ำหนักและโมเมนต์ต้านทานแรงดึงโน้มถ่วง
+                </h3>
+                <div class="overflow-x-auto table-scroll">
+                    <table class="min-w-full text-sm text-left whitespace-nowrap">
+                        <thead class="bg-blue-50 text-blue-800 border-b border-blue-100">
+                            <tr>
+                                <th class="py-3 px-4 font-semibold">น้ำหนักโครงสร้าง (Resisting Side)</th>
+                                <th class="py-3 px-4 font-semibold text-right">น้ำหนัก W (กก.)</th>
+                                <th class="py-3 px-4 text-right font-semibold">ระยะแขน x (ม.)</th>
+                                <th class="py-3 px-4 font-semibold text-right">โมเมนต์ M<sub>R</sub> (กก.-ม.)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr class="bg-blue-50/20">
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₅: ฐานรากฝั่งดิน (Heel)</div>
+                                    <div id="formula_w5" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w5" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w5" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w5" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                            <tr class="bg-blue-50/20">
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₆: ดินถมกดทับบนฐานราก (Soil on Heel)</div>
+                                    <div id="formula_w6" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w6" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w6" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w6" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₁: กำแพงหลัก (Stem Wall)</div>
+                                    <div id="formula_w1" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w1" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w1" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w1" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₂: พื้นรางน้ำระบายน้ำ</div>
+                                    <div id="formula_w2" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w2" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w2" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w2" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₃: ผนังรางน้ำฝั่งดิน</div>
+                                    <div id="formula_w3" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w3" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w3" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w3" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="font-medium text-slate-700">W₄: น้ำสะสมภายในรางระบายน้ำ</div>
+                                    <div id="formula_w4" class="text-[10px] text-slate-500/80 font-mono mt-1 leading-relaxed"></div>
+                                </td>
+                                <td id="tbl_f_w4" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_a_w4" class="py-3 px-4 text-right font-mono align-top pt-4">-</td>
+                                <td id="tbl_m_w4" class="py-3 px-4 text-right font-semibold font-mono text-slate-800 align-top pt-4">-</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-blue-50/50">
+                            <tr class="font-bold text-blue-900 border-t border-blue-100">
+                                <td class="py-4 px-4 text-right">รวมน้ำหนักและโมเมนต์ต้านสะสม:</td>
+                                <td id="sum_f_resisting" class="py-4 px-4 text-right font-mono">-</td>
+                                <td class="py-4 px-4 text-right">-</td>
+                                <td id="sum_m_resisting" class="py-4 px-4 text-right font-mono text-base text-blue-700">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 4: Pile Reactions -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between mb-3 border-l-4 border-blue-500 pl-3">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                        <span class="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-sm font-mono mr-2">4</span> กำลังรับแรงของเสาเข็ม (Pile Reactions)
+                    </h3>
+                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">จากการคำนวณสมดุลโมเมนต์</span>
+                </div>
+
+                <div class="flex flex-col gap-5">
+                    <div id="card_pile_back" class="border border-slate-200 rounded-xl p-5 md:p-6 flex flex-col transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-base font-bold text-slate-700">เสาเข็มแถวหลัง (ฝั่งดิน)</span>
+                            <div id="badge_pile_back"></div>
+                        </div>
+                        <div id="details_pile_back" class="mt-2 w-full space-y-2"></div>
+                        <div class="mt-5 border-t border-dashed border-slate-200 pt-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between items-center text-center sm:text-left">
+                            <span class="text-sm text-slate-500 block mb-2 sm:mb-0">รับน้ำหนักใช้งาน (Working):</span>
+                            <div class="flex items-baseline justify-center">
+                                <span id="pile_back_val" class="text-5xl font-black">-</span>
+                                <span class="text-sm font-semibold text-slate-600 ml-2">ตัน</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="card_pile_front" class="border border-slate-200 rounded-xl p-5 md:p-6 flex flex-col transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-base font-bold text-slate-700">เสาเข็มแถวหน้า (ฝั่งกำแพง)</span>
+                            <div id="badge_pile_front"></div>
+                        </div>
+                        <div id="details_pile_front" class="mt-2 w-full space-y-2"></div>
+                        <div class="mt-5 border-t border-dashed border-slate-200 pt-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between items-center text-center sm:text-left">
+                            <span class="text-sm text-slate-500 block mb-2 sm:mb-0">รับน้ำหนักใช้งาน (Working):</span>
+                            <div class="flex items-baseline justify-center">
+                                <span id="pile_front_val" class="text-5xl font-black">-</span>
+                                <span class="text-sm font-semibold text-slate-600 ml-2">ตัน</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-200 rounded-xl p-5 md:p-6 flex flex-col hover:border-purple-300 hover:bg-purple-50/20 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-base font-bold text-purple-700">แรงเฉือนทางข้าง (Shear)</span>
+                            <i class="fa-solid fa-arrows-left-right text-purple-400 text-lg"></i>
+                        </div>
+                        <div id="details_pile_shear" class="mt-2 w-full space-y-2"></div>
+                        <div class="mt-5 border-t border-dashed border-slate-200 pt-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between items-center text-center sm:text-left">
+                            <span class="text-sm text-slate-500 block mb-2 sm:mb-0">เฉลี่ยต่อต้น (เผื่อ F.S. 1.5):</span>
+                            <div class="flex items-baseline justify-center">
+                                <span id="pile_shear" class="text-5xl font-black text-purple-600">-</span>
+                                <span class="text-sm font-semibold text-purple-800 ml-2">ตัน</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-16 py-8 text-center text-slate-400 text-xs">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-medium">แบบจำลองวิเคราะห์และคำนวณเสถียรภาพภายนอกสำหรับกำแพงกันดิน</p>
+            <p class="mt-1 text-slate-300">ความเที่ยงตรงของข้อมูลขึ้นอยู่กับพารามิเตอร์ดินทดสอบในภาคสนาม (Soil Boring Log)</p>
+        </div>
+    </footer>
+
+    <script>
+        const inputs = [
+            'gamma_compact', 'gamma_sat', 'gamma_w', 'phi', 'q',
+            'H', 'w_stem', 'w_u_ditch', 't_u_base', 'w_wall', 'h_wall', 'h_water',
+            'L', 'l_pile', 't_heel'
+        ];
+
+        function drawVisualization(p) {
+            const canvas = document.getElementById('wallCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 350;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const pad = 30;
+
+            const stemRight = 0;
+            const stemLeft = -p.wStem;
+            const heelRight = stemLeft;
+            const heelLeft = stemLeft - p.lHeel;
+
+            const H = p.H;
+            const ditchCeilY = H; 
+            const ditchFloorY = H - p.hWall; 
+            const baseTopY = ditchFloorY;
+            const baseBottomY = baseTopY - p.tUBase;
+            const waterTopY = baseTopY + Math.min(p.hWater, p.hWall);
+
+            const ditchRight = stemLeft;
+            const ditchLeft = ditchRight - p.wUDitch;
+            const lWallRight = ditchLeft;
+            const lWallLeft = lWallRight - p.wWall;
+
+            const wMinX = heelLeft - 1.5;
+            const wMaxX = stemRight + 1.5;
+            const wMinY = -2.5;
+            const wMaxY = H + 0.8;
+            
+            const wW = wMaxX - wMinX;
+            const wH = wMaxY - wMinY;
+            const newScale = Math.min((canvas.width - pad*2) / wW, (canvas.height - pad*2) / wH);
+            const newOffX  = (canvas.width  - (wW * newScale)) / 2 - (wMinX * newScale);
+            const newOffY  = (canvas.height - (wH * newScale)) / 2 + (wMaxY * newScale);
+
+            const nx = (val) => newOffX + val * newScale;
+            const ny = (val) => newOffY - val * newScale;
+
+            const drawRect = (x, y_bot, w, h, fillStyle, strokeStyle) => {
+                ctx.fillStyle   = fillStyle   || '#dde5f0';
+                ctx.strokeStyle = strokeStyle || '#64748b';
+                ctx.lineWidth = 1.5;
+                ctx.lineCap = 'square';
+                const px = nx(x), py = ny(y_bot + h);
+                const pw = w * newScale, ph = ny(y_bot) - ny(y_bot + h);
+                ctx.fillRect(px, py, pw, ph);
+                ctx.strokeRect(px, py, pw, ph);
+            };
+
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(0, ny(0));
+            ctx.lineTo(canvas.width, ny(0));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(214,211,209,0.50)';
+            ctx.fillRect(nx(wMinX), ny(H), nx(stemLeft) - nx(wMinX), ny(0) - ny(H));
+            
+            ctx.strokeStyle = '#a8a29e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(nx(wMinX), ny(H));
+            ctx.lineTo(nx(lWallLeft), ny(H));
+            ctx.stroke();
+
+            // Piles
+            ctx.lineWidth = 7;
+            ctx.lineCap = 'round';
+            // Back pile (Orange)
+            ctx.strokeStyle = '#f97316';
+            ctx.beginPath();
+            ctx.moveTo(nx(-p.x_back),  ny(0)); ctx.lineTo(nx(-p.x_back),  ny(-2.2));
+            ctx.stroke();
+            // Front pile (Blue)
+            ctx.strokeStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(nx(-p.x_front), ny(0)); ctx.lineTo(nx(-p.x_front), ny(-2.2));
+            ctx.stroke();
+            ctx.lineCap = 'square';
+
+            if (p.tHeel > 0) {
+                drawRect(heelLeft, 0, p.lHeel, p.tHeel);
+            }
+
+            drawRect(stemLeft, 0, p.wStem, H);
+            drawRect(lWallLeft, baseBottomY, p.wWall + p.wUDitch, p.tUBase);
+            drawRect(lWallLeft, ditchFloorY, p.wWall, p.hWall);
+
+            if (p.hWater > 0) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+                let actualWaterH = Math.min(p.hWater, p.hWall);
+                ctx.fillRect(nx(ditchLeft), ny(waterTopY), p.wUDitch * newScale, ny(baseTopY) - ny(waterTopY));
+                ctx.strokeStyle = 'rgba(14,165,233,0.8)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(nx(ditchLeft), ny(waterTopY));
+                ctx.lineTo(nx(ditchRight),  ny(waterTopY));
+                ctx.stroke();
+            }
+
+            const drawLabel = (x, y, text) => {
+                ctx.font = '11px Prompt, sans-serif';
+                const tw = ctx.measureText(text).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.88)';
+                ctx.fillRect(nx(x) - tw/2 - 4, ny(y) - 9, tw + 8, 18);
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, nx(x), ny(y));
+            };
+
+            drawLabel(lWallLeft + p.wWall/2, ditchFloorY + p.hWall/2, 'Wall');
+            drawLabel(ditchLeft + p.wUDitch/2, baseBottomY + p.tUBase/2, 'Base');
+            drawLabel(stemLeft + p.wStem/2, H/2 - 0.5, 'Stem');
+            if (p.tHeel > 0) drawLabel(heelLeft + p.lHeel/2, p.tHeel/2, 'Heel');
+            if (p.lPile > 0) drawLabel((-p.x_back - p.x_front)/2, -1.1, `${p.lPile}m`);
+        }
+
+        function formatNum(val, dec = 2) {
+            return Number(val).toLocaleString('th-TH', {
+                minimumFractionDigits: dec,
+                maximumFractionDigits: dec
+            });
+        }
+
+        function calculate() {
+            const gammaCompact = parseFloat(document.getElementById('gamma_compact').value) || 0;
+            const gammaSat = parseFloat(document.getElementById('gamma_sat').value) || 0;
+            const gammaW = parseFloat(document.getElementById('gamma_w').value) || 1000;
+            const phi = parseFloat(document.getElementById('phi').value) || 0;
+            const q = parseFloat(document.getElementById('q').value) || 0;
+            const H = parseFloat(document.getElementById('H').value) || 0;
+            const tHeelInput = parseFloat(document.getElementById('t_heel').value) || 0;
+            const tHeel = Math.max(0, tHeelInput);
+            const wStem = parseFloat(document.getElementById('w_stem').value) || 0;
+            const wUDitch = parseFloat(document.getElementById('w_u_ditch').value) || 0;
+            const tUBase = parseFloat(document.getElementById('t_u_base').value) || 0;
+            const wWall = parseFloat(document.getElementById('w_wall').value) || 0;
+            const hWall = parseFloat(document.getElementById('h_wall').value) || 0;
+            const hWater = parseFloat(document.getElementById('h_water').value) || 0;
+            const L = parseFloat(document.getElementById('L').value) || 0;
+            const lPile = parseFloat(document.getElementById('l_pile').value) || 0;
+
+            const lHeel = tHeel > 0 ? (lPile + 0.6) : 0;
+            document.getElementById('l_heel_display').value = tHeel > 0 ? lHeel.toFixed(2) : "0.00";
+
+            const phiRad = (phi * Math.PI) / 180;
+            const Ka = (1 - Math.sin(phiRad)) / (1 + Math.sin(phiRad));
+            document.getElementById('ka_factor').innerText = Ka.toFixed(3);
+
+            const p1 = Ka * q;
+            const p3 = Ka * (gammaSat - gammaW) * H;
+            const p4 = gammaW * H;
+
+            document.getElementById('formula_p1').innerText = `p₁ = ${Ka.toFixed(3)} × ${q}`;
+            document.getElementById('calc_p1').innerText = formatNum(p1);
+            document.getElementById('formula_p3').innerText = `p₃ = ${Ka.toFixed(3)} × (${gammaSat} - ${gammaW}) × ${H}`;
+            document.getElementById('calc_p3').innerText = formatNum(p3);
+            document.getElementById('formula_p4').innerText = `p₄ = ${gammaW} × ${H}`;
+            document.getElementById('calc_p4').innerText = formatNum(p4);
+
+            const P1 = p1 * H * L;
+            const P3 = 0.5 * p3 * H * L;
+            const P4 = 0.5 * p4 * H * L;
+            const totalP = P1 + P3 + P4;
+
+            const y1 = H / 2;
+            const y3 = H / 3;
+            const y4 = H / 3;
+
+            const M1 = P1 * y1;
+            const M3 = P3 * y3;
+            const M4 = P4 * y4;
+            const totalMo = M1 + M3 + M4;
+
+            document.getElementById('tbl_f_p1').innerText = formatNum(P1);
+            document.getElementById('tbl_a_p1').innerText = formatNum(y1, 3);
+            document.getElementById('tbl_m_p1').innerText = formatNum(M1);
+            document.getElementById('tbl_f_p3').innerText = formatNum(P3);
+            document.getElementById('tbl_a_p3').innerText = formatNum(y3, 3);
+            document.getElementById('tbl_m_p3').innerText = formatNum(M3);
+            document.getElementById('tbl_f_p4').innerText = formatNum(P4);
+            document.getElementById('tbl_a_p4').innerText = formatNum(y4, 3);
+            document.getElementById('tbl_m_p4').innerText = formatNum(M4);
+            document.getElementById('sum_f_driving').innerText = `ΣP = ${formatNum(totalP)}`;
+            document.getElementById('sum_m_driving').innerText = `ΣMo = ${formatNum(totalMo)}`;
+
+            const W1 = wStem * H * L * 2400; 
+            const x1 = wStem / 2;
+            const MR1 = W1 * x1;
+
+            const W2 = (wWall + wUDitch) * tUBase * L * 2400; 
+            const x2 = wStem + (wWall + wUDitch) / 2;
+            const MR2 = W2 * x2;
+
+            const W3 = wWall * hWall * L * 2400; 
+            const x3 = wStem + wUDitch + wWall / 2;
+            const MR3 = W3 * x3;
+
+            const actualWaterH = Math.min(hWater, hWall);
+            const W4 = wUDitch * actualWaterH * L * gammaW; 
+            const x4 = wStem + wUDitch / 2;
+            const MR4 = W4 * x4;
+
+            const W5 = lHeel * tHeel * L * 2400; 
+            const x5 = wStem + lHeel / 2;
+            const MR5 = W5 * x5;
+
+            let W6 = 0, MR6 = 0, x6 = 0;
+            let w_ud_total = wWall + wUDitch;
+            let h_ud_total = hWall + tUBase;
+
+            if (lHeel > 0) {
+                if (lHeel >= w_ud_total) {
+                    let w6_1 = w_ud_total;
+                    let h6_1 = Math.max(0, H - tHeel - h_ud_total);
+                    let vol6_1 = w6_1 * h6_1 * L;
+                    let cx6_1 = wStem + w6_1 / 2;
+                    
+                    let w6_2 = lHeel - w_ud_total;
+                    let h6_2 = Math.max(0, H - tHeel);
+                    let vol6_2 = w6_2 * h6_2 * L;
+                    let cx6_2 = wStem + w_ud_total + w6_2 / 2;
+                    
+                    W6 = (vol6_1 + vol6_2) * gammaCompact;
+                    MR6 = (vol6_1 * cx6_1 + vol6_2 * cx6_2) * gammaCompact;
+                } else {
+                    let w6_1 = lHeel;
+                    let h6_1 = Math.max(0, H - tHeel - h_ud_total);
+                    let vol6_1 = w6_1 * h6_1 * L;
+                    let cx6_1 = wStem + w6_1 / 2;
+                    
+                    W6 = vol6_1 * gammaCompact;
+                    MR6 = vol6_1 * cx6_1 * gammaCompact;
+                }
+                x6 = W6 > 0 ? MR6 / W6 : 0;
+            }
+
+            const totalW = W1 + W2 + W3 + W4 + W5 + W6;
+            const totalMr = MR1 + MR2 + MR3 + MR4 + MR5 + MR6;
+
+            document.getElementById('formula_w5').innerHTML = `W₅ = L<sub>heel</sub> &times; t<sub>heel</sub> &times; L &times; 2400<br>= ${formatNum(lHeel)} &times; ${formatNum(tHeel)} &times; ${formatNum(L)} &times; 2400`;
+            document.getElementById('formula_w6').innerHTML = `W₆ = V<sub>soil</sub> &times; &gamma;<sub>compact</sub><br>= ${formatNum(W6 / gammaCompact, 3)} &times; ${formatNum(gammaCompact)}`;
+            document.getElementById('formula_w1').innerHTML = `W₁ = w<sub>stem</sub> &times; H &times; L &times; 2400<br>= ${formatNum(wStem)} &times; ${formatNum(H)} &times; ${formatNum(L)} &times; 2400`;
+            document.getElementById('formula_w2').innerHTML = `W₂ = (w<sub>wall</sub> + w<sub>u_ditch</sub>) &times; t<sub>u_base</sub> &times; L &times; 2400<br>= (${formatNum(wWall)} + ${formatNum(wUDitch)}) &times; ${formatNum(tUBase)} &times; ${formatNum(L)} &times; 2400`;
+            document.getElementById('formula_w3').innerHTML = `W₃ = w<sub>wall</sub> &times; h<sub>wall</sub> &times; L &times; 2400<br>= ${formatNum(wWall)} &times; ${formatNum(hWall)} &times; ${formatNum(L)} &times; 2400`;
+            document.getElementById('formula_w4').innerHTML = `W₄ = w<sub>u_ditch</sub> &times; h<sub>water</sub> &times; L &times; &gamma;<sub>w</sub><br>= ${formatNum(wUDitch)} &times; ${formatNum(actualWaterH)} &times; ${formatNum(L)} &times; ${formatNum(gammaW)}`;
+
+            document.getElementById('tbl_f_w5').innerText = formatNum(W5);
+            document.getElementById('tbl_a_w5').innerText = formatNum(x5, 3);
+            document.getElementById('tbl_m_w5').innerText = formatNum(MR5);
+            document.getElementById('tbl_f_w6').innerText = formatNum(W6);
+            document.getElementById('tbl_a_w6').innerText = formatNum(x6, 3);
+            document.getElementById('tbl_m_w6').innerText = formatNum(MR6);
+            document.getElementById('tbl_f_w1').innerText = formatNum(W1);
+            document.getElementById('tbl_a_w1').innerText = formatNum(x1, 3);
+            document.getElementById('tbl_m_w1').innerText = formatNum(MR1);
+            document.getElementById('tbl_f_w2').innerText = formatNum(W2);
+            document.getElementById('tbl_a_w2').innerText = formatNum(x2, 3);
+            document.getElementById('tbl_m_w2').innerText = formatNum(MR2);
+            document.getElementById('tbl_f_w3').innerText = formatNum(W3);
+            document.getElementById('tbl_a_w3').innerText = formatNum(x3, 3);
+            document.getElementById('tbl_m_w3').innerText = formatNum(MR3);
+            document.getElementById('tbl_f_w4').innerText = formatNum(W4);
+            document.getElementById('tbl_a_w4').innerText = formatNum(x4, 3);
+            document.getElementById('tbl_m_w4').innerText = formatNum(MR4);
+            document.getElementById('sum_f_resisting').innerText = `ΣW = ${formatNum(totalW)}`;
+            document.getElementById('sum_m_resisting').innerText = `ΣMr = ${formatNum(totalMr)}`;
+
+            const FS = totalMo > 0 ? (totalMr / totalMo) : 999;
+            document.getElementById('fs_val').innerText = FS.toFixed(2);
+            document.getElementById('eq_mr').innerText = formatNum(totalMr);
+            document.getElementById('eq_mo').innerText = formatNum(totalMo);
+
+            const fsCard = document.getElementById('fs_card');
+            const fsIcon = document.getElementById('fs_icon');
+            const statusBadge = document.getElementById('status_badge');
+
+            if (FS >= 1.5) {
+                fsCard.className = "border-2 border-emerald-500 bg-emerald-50/20 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-all duration-300";
+                fsIcon.className = "fa-solid fa-scale-balanced text-9xl text-emerald-500";
+                statusBadge.className = "bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-300 flex items-center";
+                statusBadge.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> ผ่านมาตรฐาน';
+                document.getElementById('fs_val').className = "text-5xl font-black tracking-tighter text-emerald-600";
+            } else {
+                fsCard.className = "border-2 border-red-200 bg-red-50/20 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-all duration-300";
+                fsIcon.className = "fa-solid fa-scale-unbalanced text-9xl text-red-500";
+                statusBadge.className = "bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold border border-red-300 flex items-center";
+                statusBadge.innerHTML = '<i class="fa-solid fa-xmark mr-1.5"></i> ไม่ผ่านเกณฑ์';
+                document.getElementById('fs_val').className = "text-5xl font-black tracking-tighter text-red-600";
+            }
+
+            const x_back  = tHeel > 0 
+                ? wStem + lHeel - 0.3    
+                : wStem / 2;             
+            const x_front = x_back - lPile;
+
+            // ค้นหาตำแหน่งและแขนโมเมนต์อย่างละเอียด
+            const x_res = totalW > 0 ? (totalMr - totalMo) / totalW : 0;
+            const arm_front = x_res - x_front; // ใช้หา R_back
+            const arm_back = x_back - x_res;   // ใช้หา R_front
+
+            let R_front = 0;
+            let R_back = 0;
+
+            if (lPile > 0) {
+                R_back = (totalW * arm_front) / lPile / 1000;
+                R_front = (totalW * arm_back) / lPile / 1000;
+            }
+
+            // แทรกรายละเอียดการคำนวณแบบ 3 Steps สำหรับเสาเข็มแถวหลัง
+            document.getElementById('details_pile_back').innerHTML = `
+                <div class="text-xs text-slate-500 font-mono space-y-1">
+                    <p class="font-medium text-slate-700">Step 1: หาตำแหน่งแรงลัพธ์สุทธิ (x&#772;<sub>net</sub>)</p>
+                    <p class="pl-4">x&#772;<sub>net</sub> = (ΣM<sub>R</sub> - ΣM<sub>O</sub>) / ΣW</p>
+                    <p class="pl-4">x&#772;<sub>net</sub> = (${formatNum(totalMr)} - ${formatNum(totalMo)}) / ${formatNum(totalW)} = <b>${formatNum(x_res, 3)} ม.</b></p>
+                </div>
+                <div class="text-xs text-slate-500 font-mono space-y-1 mt-3">
+                    <p class="font-medium text-slate-700">Step 2: หาแขนโมเมนต์ (Arm) โดยใช้เสาเข็มหน้าเป็นจุดหมุน</p>
+                    <p class="pl-4">Arm = x&#772;<sub>net</sub> - x<sub>front</sub></p>
+                    <p class="pl-4">Arm = ${formatNum(x_res, 3)} - ${formatNum(x_front)} = <b>${formatNum(arm_front, 3)} ม.</b></p>
+                </div>
+                <div class="mt-4 w-full">
+                    <p class="text-xs sm:text-sm text-orange-700/90 font-mono bg-white/60 p-3 sm:p-4 rounded-lg border border-orange-200/50 break-words leading-relaxed w-full shadow-sm">
+                        R<sub>back</sub> = (ΣW &times; Arm) / L<sub>pile</sub><br>
+                        R<sub>back</sub> = (${formatNum(totalW)} &times; ${formatNum(arm_front, 3)}) / (${formatNum(lPile)} &times; 1000)
+                    </p>
+                </div>
+            `;
+
+            // แทรกรายละเอียดการคำนวณแบบ 3 Steps สำหรับเสาเข็มแถวหน้า
+            document.getElementById('details_pile_front').innerHTML = `
+                <div class="text-xs text-slate-500 font-mono space-y-1">
+                    <p class="font-medium text-slate-700">Step 1: อ้างอิงตำแหน่งแรงลัพธ์สุทธิ</p>
+                    <p class="pl-4">x&#772;<sub>net</sub> = <b>${formatNum(x_res, 3)} ม.</b></p>
+                </div>
+                <div class="text-xs text-slate-500 font-mono space-y-1 mt-3">
+                    <p class="font-medium text-slate-700">Step 2: หาแขนโมเมนต์ (Arm) โดยใช้เสาเข็มหลังเป็นจุดหมุน</p>
+                    <p class="pl-4">Arm = x<sub>back</sub> - x&#772;<sub>net</sub></p>
+                    <p class="pl-4">Arm = ${formatNum(x_back)} - ${formatNum(x_res, 3)} = <b>${formatNum(arm_back, 3)} ม.</b></p>
+                </div>
+                <div class="mt-4 w-full">
+                    <p class="text-xs sm:text-sm text-blue-700/90 font-mono bg-white/60 p-3 sm:p-4 rounded-lg border border-blue-200/50 break-words leading-relaxed w-full shadow-sm">
+                        R<sub>front</sub> = (ΣW &times; Arm) / L<sub>pile</sub><br>
+                        R<sub>front</sub> = (${formatNum(totalW)} &times; ${formatNum(arm_back, 3)}) / (${formatNum(lPile)} &times; 1000)
+                    </p>
+                </div>
+            `;
+
+            // แทรกรายละเอียดสมการแรงเฉือน
+            document.getElementById('details_pile_shear').innerHTML = `
+                <div class="text-xs text-slate-500 font-mono space-y-1">
+                    <p class="font-medium text-slate-700">สมการคำนวณแรงเฉือนเฉลี่ยต่อต้น:</p>
+                    <p class="pl-4">V = (1.5 &times; ΣP) / (จำนวนเสาเข็ม 2 ต้น)</p>
+                </div>
+                <div class="mt-4 w-full">
+                    <p class="text-xs sm:text-sm text-purple-700/90 font-mono bg-white/60 p-3 sm:p-4 rounded-lg border border-purple-200/50 break-words leading-relaxed w-full shadow-sm">
+                        V = (1.5 &times; ${formatNum(totalP)}) / (2 &times; 1000)
+                    </p>
+                </div>
+            `;
+
+            const Hreq = 1.5 * totalP;
+            const shearTons = (Hreq / 2) / 1000;
+
+            function updatePileUI(idPrefix, loadVal) {
+                const valEl = document.getElementById(idPrefix + '_val');
+                const cardEl = document.getElementById('card_' + idPrefix);
+                const badgeEl = document.getElementById('badge_' + idPrefix);
+                if (!valEl) return;
+                valEl.innerText = formatNum(Math.abs(loadVal), 2);
+                if (loadVal >= 0) {
+                    valEl.className = "text-5xl font-black text-blue-600";
+                    cardEl.className = "border border-blue-200 bg-blue-50/20 rounded-xl p-5 md:p-6 flex flex-col transition-colors";
+                    badgeEl.innerHTML = '<span class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md text-xs font-bold shadow-sm"><i class="fa-solid fa-arrow-down mr-1"></i>แรงกด (Comp.)</span>';
+                } else {
+                    valEl.className = "text-5xl font-black text-orange-600";
+                    cardEl.className = "border border-orange-200 bg-orange-50/20 rounded-xl p-5 md:p-6 flex flex-col transition-colors";
+                    badgeEl.innerHTML = '<span class="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-md text-xs font-bold shadow-sm"><i class="fa-solid fa-arrow-up mr-1"></i>แรงถอน (Tens.)</span>';
+                }
+            }
+
+            updatePileUI('pile_back', R_back);
+            updatePileUI('pile_front', R_front);
+            document.getElementById('pile_shear').innerText = formatNum(shearTons, 2);
+
+            drawVisualization({
+                H, tHeel, lHeel, wStem, wUDitch, tUBase, wWall, hWall, hWater, lPile, x_back, x_front
+            });
+        }
+
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', calculate);
+        });
+
+        window.addEventListener('resize', calculate);
+        window.onload = function() { calculate(); };
+    </script>
+</body>
+</html>
