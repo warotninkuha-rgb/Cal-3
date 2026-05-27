@@ -180,10 +180,20 @@
                                 <label class="block text-xs text-slate-600 mb-1 font-medium">ระยะห่างเสาเข็มแถวหน้า-แถวหลัง (L<sub>pile</sub>) [ม.]</label>
                                 <input type="number" id="l_pile" value="1.25" step="0.05" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none print:border-slate-300 print:bg-slate-50" />
                             </div>
-                            <div class="bg-slate-50 p-2 rounded border border-slate-100 print:p-0 print:border-0 print:bg-transparent">
+                            <div class="bg-slate-50 p-2 rounded border border-slate-100 print:p-0 print:border-0 print:bg-transparent print:col-span-2">
                                 <label class="block text-xs text-slate-600 mb-1 font-medium">ความยาวฐานรากฝั่งดิน (L<sub>heel</sub>) [ม.]</label>
                                 <input type="text" id="l_heel_display" readonly class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm font-mono text-slate-500 cursor-not-allowed print:border-slate-300 print:bg-slate-50" />
                                 <p class="text-[10px] text-slate-400 mt-1 print:hidden"><i class="fa-solid fa-calculator mr-1"></i>อัตโนมัติ: L<sub>pile</sub> + 0.6 (เมื่อมี t<sub>heel</sub>)</p>
+                            </div>
+                        </div>
+
+                        <!-- NEW PLAN VIEW DIAGRAM -->
+                        <div class="mt-5 bg-white border border-slate-200 rounded-xl p-4 shadow-sm print:break-inside-avoid">
+                            <h5 class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-center">
+                                <i class="fa-solid fa-layer-group text-blue-500 mr-2"></i> ผังฐานรากมองจากด้านบน (Plan View)
+                            </h5>
+                            <div class="w-full relative overflow-hidden bg-slate-50 rounded-lg border border-slate-100">
+                                <canvas id="planCanvas" class="w-full h-[160px] block"></canvas>
                             </div>
                         </div>
                     </div>
@@ -822,6 +832,91 @@
             ctx.textBaseline = 'alphabetic'; 
         }
 
+        function drawPlanVisualization(p) {
+            const canvas = document.getElementById('planCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 160;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const padX = 40; 
+            const padY = 30;
+            
+            const maxX = p.wStem + p.lHeel;
+            const maxY = p.L;
+
+            const wW = maxX > 0 ? maxX : 1;
+            const wH = maxY > 0 ? maxY : 1;
+
+            const scale = Math.min((canvas.width - padX * 2) / wW, (canvas.height - padY * 2) / wH);
+            
+            const offX = (canvas.width - (wW * scale)) / 2;
+            const offY = (canvas.height - (wH * scale)) / 2;
+
+            const nx = (val) => offX + (val * scale);
+            const ny = (val) => offY + (val * scale);
+
+            const drawHLine = (x1, x2, y, text) => {
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(nx(x1), y); ctx.lineTo(nx(x2), y); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(nx(x1), y-3); ctx.lineTo(nx(x1), y+3); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(nx(x2), y-3); ctx.lineTo(nx(x2), y+3); ctx.stroke();
+                ctx.fillStyle = '#64748b'; ctx.font = '10px Prompt'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                ctx.fillText(text, (nx(x1)+nx(x2))/2, y - 2);
+            };
+            const drawVLine = (x, y1, y2, text) => {
+                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(x, ny(y1)); ctx.lineTo(x, ny(y2)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x-3, ny(y1)); ctx.lineTo(x+3, ny(y1)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x-3, ny(y2)); ctx.lineTo(x+3, ny(y2)); ctx.stroke();
+                ctx.fillStyle = '#64748b'; ctx.font = '10px Prompt'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                ctx.save();
+                ctx.translate(x - 5, (ny(y1)+ny(y2))/2);
+                ctx.rotate(-Math.PI/2);
+                ctx.fillText(text, 0, 0);
+                ctx.restore();
+            };
+
+            // 1. Draw Stem
+            ctx.fillStyle = '#e2e8f0'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5;
+            ctx.fillRect(nx(0), ny(0), p.wStem * scale, p.L * scale);
+            ctx.strokeRect(nx(0), ny(0), p.wStem * scale, p.L * scale);
+            ctx.fillStyle = '#64748b'; ctx.font = '10px Prompt'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            if(p.wStem * scale > 20) ctx.fillText("Stem", nx(p.wStem/2), ny(p.L/2));
+
+            // 2. Draw Heel
+            if (p.lHeel > 0) {
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(nx(p.wStem), ny(0), p.lHeel * scale, p.L * scale);
+                ctx.strokeRect(nx(p.wStem), ny(0), p.lHeel * scale, p.L * scale);
+                ctx.fillStyle = '#64748b';
+                if(p.lHeel * scale > 30) ctx.fillText("Heel", nx(p.wStem + p.lHeel/2), ny(p.L/4));
+            }
+
+            // 3. Draw Piles
+            if (p.lPile > 0 && p.tHeel > 0) {
+                const py = p.L / 2; 
+                const r = 5; 
+                
+                // Front (Blue)
+                ctx.fillStyle = '#3b82f6'; ctx.beginPath(); ctx.arc(nx(p.x_front), ny(py), r, 0, 2*Math.PI); ctx.fill();
+                // Back (Orange)
+                ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(nx(p.x_back), ny(py), r, 0, 2*Math.PI); ctx.fill();
+
+                // Dim L_pile
+                drawHLine(p.x_front, p.x_back, ny(py) + 15, `L_pile = ${p.lPile}m`);
+            }
+
+            // 4. Draw Outer Dimensions
+            drawVLine(nx(0) - 15, 0, p.L, `L = ${p.L}m`);
+            
+            if (p.lHeel > 0) {
+                drawHLine(p.wStem, p.wStem + p.lHeel, ny(p.L) + 15, `L_heel = ${p.lHeel.toFixed(2)}m`);
+            }
+        }
+
         function formatNum(val, dec = 2) {
             return Number(val).toLocaleString('th-TH', {
                 minimumFractionDigits: dec,
@@ -1133,6 +1228,10 @@
             drawOverallBehavior({
                 H, tHeel, lHeel, wStem, wUDitch, tUBase, wWall, hWall, hWater, lPile, 
                 x_back, x_front, x_res, y_net, totalW, totalP, R_front, R_back
+            });
+
+            drawPlanVisualization({
+                wStem, lHeel, L, lPile, x_front, x_back, tHeel
             });
         }
 
