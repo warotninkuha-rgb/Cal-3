@@ -118,6 +118,10 @@
                                 <label class="block text-xs text-slate-600 mb-1 font-medium">มุมเสียดทานดิน (&phi;) [องศา]</label>
                                 <input type="number" id="phi" value="30" min="0" max="45" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none print:border-slate-300 print:bg-slate-50" />
                             </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">สัมประสิทธิ์แรงเสียดทาน (f)</label>
+                                <input type="number" id="friction_f" value="0.45" step="0.01" min="0" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none print:border-slate-300 print:bg-slate-50" />
+                            </div>
                             <div class="print:col-span-2">
                                 <label class="block text-xs text-slate-600 mb-1 font-medium">น้ำหนักบรรทุกจร Surcharge (q) [กก./ม.²]</label>
                                 <input type="number" id="q" value="1000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none print:border-slate-300 print:bg-slate-50" />
@@ -200,23 +204,46 @@
                 </div>
             </div>
 
-            <!-- F.S. Summary Card -->
-            <div id="fs_card" class="print-avoid-break border-2 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-colors duration-300">
-                <div class="absolute right-0 bottom-0 opacity-5">
-                    <i id="fs_icon" class="fa-solid text-9xl"></i>
-                </div>
-                <div class="relative z-10 text-center sm:text-left">
-                    <h4 class="font-bold text-gray-800 text-lg mb-1">ความปลอดภัยต่อการพลิกคว่ำ (Factor of Safety)</h4>
-                    <p class="font-mono text-xs text-gray-500 bg-white border px-3 py-1 rounded inline-block mt-1">
-                        F.S. = &Sigma;M<sub>R</sub> / &Sigma;M<sub>O</sub> = <span id="eq_mr">-</span> / <span id="eq_mo">-</span>
-                    </p>
-                </div>
-                <div class="relative z-10 flex flex-col items-center sm:items-end">
-                    <div class="flex items-center gap-3 mb-1">
-                        <span id="fs_val" class="text-5xl font-black tracking-tighter">-</span>
-                        <div id="status_badge" class="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center"></div>
+            <!-- F.S. Summary Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- F.S. Overturning -->
+                <div id="fs_card_ot" class="print-avoid-break border-2 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center">
+                    <div class="absolute right-0 bottom-0 opacity-5">
+                        <i id="fs_icon_ot" class="fa-solid text-9xl"></i>
                     </div>
-                    <span class="text-xs text-gray-500">(เกณฑ์ควบคุมด้านความปลอดภัยต้อง &ge; 1.50)</span>
+                    <div class="relative z-10 w-full mb-3">
+                        <h4 class="font-bold text-gray-800 text-lg mb-1">ความปลอดภัยต่อการพลิกคว่ำ (Overturning)</h4>
+                        <p class="font-mono text-xs text-gray-500 bg-white border px-3 py-1 rounded inline-block mt-1">
+                            F.S. = &Sigma;M<sub>R</sub> / &Sigma;M<sub>O</sub> = <span id="eq_mr_ot">-</span> / <span id="eq_mo_ot">-</span>
+                        </p>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="flex items-center gap-3 mb-1">
+                            <span id="fs_val_ot" class="text-5xl font-black tracking-tighter">-</span>
+                            <div id="status_badge_ot" class="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center"></div>
+                        </div>
+                        <span class="text-xs text-gray-500">(เกณฑ์ &ge; 1.50)</span>
+                    </div>
+                </div>
+
+                <!-- F.S. Sliding -->
+                <div id="fs_card_sl" class="print-avoid-break border-2 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center">
+                    <div class="absolute right-0 bottom-0 opacity-5">
+                        <i id="fs_icon_sl" class="fa-solid text-9xl"></i>
+                    </div>
+                    <div class="relative z-10 w-full mb-3">
+                        <h4 class="font-bold text-gray-800 text-lg mb-1">ความปลอดภัยต่อการลื่นไถล (Sliding)</h4>
+                        <p class="font-mono text-xs text-gray-500 bg-white border px-3 py-1 rounded inline-block mt-1">
+                            F.S. = (f &times; &Sigma;W) / &Sigma;P = <span id="eq_fv_sl">-</span> / <span id="eq_p_sl">-</span>
+                        </p>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="flex items-center gap-3 mb-1">
+                            <span id="fs_val_sl" class="text-5xl font-black tracking-tighter">-</span>
+                            <div id="status_badge_sl" class="px-4 py-1.5 rounded-full text-xs font-bold border flex items-center"></div>
+                        </div>
+                        <span class="text-xs text-gray-500">(เกณฑ์ &ge; 1.50)</span>
+                    </div>
                 </div>
             </div>
 
@@ -476,7 +503,7 @@
 
     <script>
         const inputs = [
-            'gamma_compact', 'gamma_sat', 'gamma_w', 'phi', 'q',
+            'gamma_compact', 'gamma_sat', 'gamma_w', 'phi', 'q', 'friction_f',
             'H', 'w_stem', 'w_u_ditch', 't_u_base', 'w_wall', 'h_wall', 'h_water',
             'L', 'l_pile', 't_heel'
         ];
@@ -764,21 +791,21 @@
                     ctx.fillText(`${label} = ${formatNum(Math.abs(R))} t (ถอน)`, textX, ny(-3.4));
                 }
             };
-            drawReaction(p.x_back, p.R_back, 'R_back', '#f97316', 'left'); // Orange 500 (ขยับข้อความไปทางขวา)
-            drawReaction(p.x_front, p.R_front, 'R_front', '#3b82f6', 'right'); // Blue 500 (ขยับข้อความไปทางซ้าย)
+            drawReaction(p.x_back, p.R_back, 'R_back', '#f97316', 'left'); // Orange 500
+            drawReaction(p.x_front, p.R_front, 'R_front', '#3b82f6', 'right'); // Blue 500
 
             // Draw x_res dimension at Toe
             ctx.strokeStyle = '#d97706'; // Yellow 600
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
-            ctx.moveTo(nx(0), ny(0)); ctx.lineTo(nx(0), ny(-0.8)); // Toe ref (ลากเส้นประลงมาให้ยาวขึ้น)
+            ctx.moveTo(nx(0), ny(0)); ctx.lineTo(nx(0), ny(-0.8)); // Toe ref
             ctx.moveTo(nx(p.x_res), ny(0.2)); ctx.lineTo(nx(p.x_res), ny(-0.8)); // x_res ref
             ctx.stroke();
             
             ctx.setLineDash([]);
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(nx(0), ny(-0.5)); ctx.lineTo(nx(p.x_res), ny(-0.5)); // ขยับเส้นบอกระยะลงมา
+            ctx.moveTo(nx(0), ny(-0.5)); ctx.lineTo(nx(p.x_res), ny(-0.5));
             ctx.stroke();
             // ticks
             ctx.beginPath(); ctx.moveTo(nx(0), ny(-0.45)); ctx.lineTo(nx(0), ny(-0.55)); ctx.stroke();
@@ -787,13 +814,12 @@
             ctx.fillStyle = '#d97706';
             ctx.font = 'bold 12px Prompt';
             
-            // ขยับตัวหนังสือไปด้านซ้ายของเส้นบอกระยะ เพื่อไม่ให้ทับเส้นประ
             ctx.textAlign = 'right';
             ctx.textBaseline = 'middle'; 
             ctx.fillText(`x̄_net = ${formatNum(p.x_res, 3)}m`, Math.min(nx(0), nx(p.x_res)) - 8, ny(-0.5)); 
             
-            ctx.textAlign = 'center'; // รีเซ็ตค่า
-            ctx.textBaseline = 'alphabetic'; // รีเซ็ตค่าเพื่อไม่ให้กระทบส่วนอื่น
+            ctx.textAlign = 'center'; 
+            ctx.textBaseline = 'alphabetic'; 
         }
 
         function formatNum(val, dec = 2) {
@@ -809,6 +835,7 @@
             const gammaW = parseFloat(document.getElementById('gamma_w').value) || 1000;
             const phi = parseFloat(document.getElementById('phi').value) || 0;
             const q = parseFloat(document.getElementById('q').value) || 0;
+            const friction_f = parseFloat(document.getElementById('friction_f').value) || 0;
             const H = parseFloat(document.getElementById('H').value) || 0;
             const tHeelInput = parseFloat(document.getElementById('t_heel').value) || 0;
             const tHeel = Math.max(0, tHeelInput);
@@ -947,27 +974,57 @@
             document.getElementById('sum_f_resisting').innerText = `ΣW = ${formatNum(totalW)}`;
             document.getElementById('sum_m_resisting').innerText = `ΣMr = ${formatNum(totalMr)}`;
 
-            const FS = totalMo > 0 ? (totalMr / totalMo) : 999;
-            document.getElementById('fs_val').innerText = FS.toFixed(2);
-            document.getElementById('eq_mr').innerText = formatNum(totalMr);
-            document.getElementById('eq_mo').innerText = formatNum(totalMo);
+            // ----------------------------------------
+            // Overturning Factor of Safety
+            // ----------------------------------------
+            const FS_overturning = totalMo > 0 ? (totalMr / totalMo) : 999;
+            document.getElementById('fs_val_ot').innerText = FS_overturning.toFixed(2);
+            document.getElementById('eq_mr_ot').innerText = formatNum(totalMr);
+            document.getElementById('eq_mo_ot').innerText = formatNum(totalMo);
 
-            const fsCard = document.getElementById('fs_card');
-            const fsIcon = document.getElementById('fs_icon');
-            const statusBadge = document.getElementById('status_badge');
+            const fsCard_ot = document.getElementById('fs_card_ot');
+            const fsIcon_ot = document.getElementById('fs_icon_ot');
+            const statusBadge_ot = document.getElementById('status_badge_ot');
 
-            if (FS >= 1.5) {
-                fsCard.className = "print-avoid-break border-2 border-emerald-500 bg-emerald-50/20 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-all duration-300";
-                fsIcon.className = "fa-solid fa-scale-balanced text-9xl text-emerald-500";
-                statusBadge.className = "bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-300 flex items-center print:border-emerald-500 print:text-emerald-800";
-                statusBadge.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> ผ่านมาตรฐาน';
-                document.getElementById('fs_val').className = "text-5xl font-black tracking-tighter text-emerald-600";
+            if (FS_overturning >= 1.5) {
+                fsCard_ot.className = "print-avoid-break border-2 border-emerald-500 bg-emerald-50/20 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center";
+                fsIcon_ot.className = "fa-solid fa-scale-balanced text-9xl text-emerald-500";
+                statusBadge_ot.className = "bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-300 flex items-center print:border-emerald-500 print:text-emerald-800";
+                statusBadge_ot.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> ผ่านมาตรฐาน';
+                document.getElementById('fs_val_ot').className = "text-5xl font-black tracking-tighter text-emerald-600";
             } else {
-                fsCard.className = "print-avoid-break border-2 border-red-200 bg-red-50/20 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden transition-all duration-300";
-                fsIcon.className = "fa-solid fa-scale-unbalanced text-9xl text-red-500";
-                statusBadge.className = "bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold border border-red-300 flex items-center print:border-red-500 print:text-red-800";
-                statusBadge.innerHTML = '<i class="fa-solid fa-xmark mr-1.5"></i> ไม่ผ่านเกณฑ์';
-                document.getElementById('fs_val').className = "text-5xl font-black tracking-tighter text-red-600";
+                fsCard_ot.className = "print-avoid-break border-2 border-red-200 bg-red-50/20 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center";
+                fsIcon_ot.className = "fa-solid fa-scale-unbalanced text-9xl text-red-500";
+                statusBadge_ot.className = "bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold border border-red-300 flex items-center print:border-red-500 print:text-red-800";
+                statusBadge_ot.innerHTML = '<i class="fa-solid fa-xmark mr-1.5"></i> ไม่ผ่านเกณฑ์';
+                document.getElementById('fs_val_ot').className = "text-5xl font-black tracking-tighter text-red-600";
+            }
+
+            // ----------------------------------------
+            // Sliding Factor of Safety
+            // ----------------------------------------
+            const F_friction = friction_f * totalW;
+            const FS_sliding = totalP > 0 ? (F_friction / totalP) : 999;
+            document.getElementById('fs_val_sl').innerText = FS_sliding.toFixed(2);
+            document.getElementById('eq_fv_sl').innerText = formatNum(F_friction);
+            document.getElementById('eq_p_sl').innerText = formatNum(totalP);
+
+            const fsCard_sl = document.getElementById('fs_card_sl');
+            const fsIcon_sl = document.getElementById('fs_icon_sl');
+            const statusBadge_sl = document.getElementById('status_badge_sl');
+
+            if (FS_sliding >= 1.5) {
+                fsCard_sl.className = "print-avoid-break border-2 border-emerald-500 bg-emerald-50/20 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center";
+                fsIcon_sl.className = "fa-solid fa-shield-halved text-9xl text-emerald-500";
+                statusBadge_sl.className = "bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-300 flex items-center print:border-emerald-500 print:text-emerald-800";
+                statusBadge_sl.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> ผ่านมาตรฐาน';
+                document.getElementById('fs_val_sl').className = "text-5xl font-black tracking-tighter text-emerald-600";
+            } else {
+                fsCard_sl.className = "print-avoid-break border-2 border-red-200 bg-red-50/20 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-300 text-center";
+                fsIcon_sl.className = "fa-solid fa-triangle-exclamation text-9xl text-red-500";
+                statusBadge_sl.className = "bg-red-100 text-red-700 px-4 py-1.5 rounded-full text-xs font-bold border border-red-300 flex items-center print:border-red-500 print:text-red-800";
+                statusBadge_sl.innerHTML = '<i class="fa-solid fa-xmark mr-1.5"></i> ไม่ผ่านเกณฑ์';
+                document.getElementById('fs_val_sl').className = "text-5xl font-black tracking-tighter text-red-600";
             }
 
             const x_back  = tHeel > 0 
@@ -1027,21 +1084,25 @@
                 </div>
             `;
 
+            // การคำนวณแรงเฉือน (หักลบด้วยแรงเสียดทาน)
+            let reqShear = 1.5 * totalP;
+            let netShear = reqShear - F_friction;
+            if (netShear < 0) netShear = 0; // ถ้าน้อยกว่า 0 แปลว่าแรงเสียดทานเอาอยู่
+            const shearTons = (netShear / 2) / 1000;
+
             // แทรกรายละเอียดสมการแรงเฉือน
             document.getElementById('details_pile_shear').innerHTML = `
                 <div class="text-xs text-slate-500 font-mono space-y-1">
-                    <p class="font-medium text-slate-700 print:text-slate-800">สมการคำนวณแรงเฉือนเฉลี่ยต่อต้น:</p>
-                    <p class="pl-4">V = (1.5 &times; ΣP) / (จำนวนเสาเข็ม 2 ต้น)</p>
+                    <p class="font-medium text-slate-700 print:text-slate-800">สมการคำนวณแรงเฉือน (หักลบแรงเสียดทาน):</p>
+                    <p class="pl-4">V = [ (1.5 &times; ΣP) - (f &times; ΣW) ] / 2 ต้น</p>
                 </div>
                 <div class="mt-4 w-full">
                     <p class="text-xs sm:text-sm text-purple-700/90 font-mono bg-white/60 p-3 sm:p-4 rounded-lg border border-purple-200/50 break-words leading-relaxed w-full shadow-sm print:bg-purple-50 print:border-purple-300">
-                        V = (1.5 &times; ${formatNum(totalP)}) / (2 &times; 1000)
+                        V = [ (1.5 &times; ${formatNum(totalP)}) - (${formatNum(friction_f)} &times; ${formatNum(totalW)}) ] / (2 &times; 1000)
                     </p>
                 </div>
             `;
 
-            const Hreq = 1.5 * totalP;
-            const shearTons = (Hreq / 2) / 1000;
             const y_net = totalP > 0 ? totalMo / totalP : 0;
 
             function updatePileUI(idPrefix, loadVal) {
