@@ -45,7 +45,7 @@
                     <span class="font-semibold text-base md:hidden">คำนวณเสถียรภาพกำแพงกันดิน</span>
                 </div>
                 <div>
-                    <span class="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">แอปพลิเคชันจำลองคำนวณ</span>
+                    <span class="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">แอปพลิเคชันจำลองคำนวณสด</span>
                 </div>
             </div>
         </div>
@@ -370,6 +370,16 @@
                     <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">จากการคำนวณสมดุลโมเมนต์</span>
                 </div>
 
+                <!-- OVERALL BEHAVIOR DIAGRAM -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-4">
+                    <h4 class="text-base font-bold text-slate-700 mb-6 flex items-center justify-center">
+                        ไดอะแกรมแรงลัพธ์และแรงเสาเข็ม (Overall Behavior)
+                    </h4>
+                    <div class="w-full relative overflow-hidden bg-white border border-slate-200 rounded-lg shadow-inner" id="overall-canvas-container">
+                        <canvas id="overallCanvas" class="w-full h-[450px] cursor-crosshair block"></canvas>
+                    </div>
+                </div>
+
                 <div class="flex flex-col gap-5">
                     <div id="card_pile_back" class="border border-slate-200 rounded-xl p-5 md:p-6 flex flex-col transition-colors">
                         <div class="flex items-center justify-between mb-2">
@@ -447,10 +457,11 @@
 
             const pad = 30;
 
-            const stemRight = 0;
-            const stemLeft = -p.wStem;
-            const heelRight = stemLeft;
-            const heelLeft = stemLeft - p.lHeel;
+            // Mirror logic: กำแพง(Stem) อยู่ซ้าย (เริ่มที่ x=0), ดินอยู่ขวา (x เป็นบวก)
+            const stemLeft = 0;
+            const stemRight = p.wStem;
+            const heelLeft = stemRight;
+            const heelRight = stemRight + p.lHeel;
 
             const H = p.H;
             const ditchCeilY = H; 
@@ -459,13 +470,14 @@
             const baseBottomY = baseTopY - p.tUBase;
             const waterTopY = baseTopY + Math.min(p.hWater, p.hWall);
 
-            const ditchRight = stemLeft;
-            const ditchLeft = ditchRight - p.wUDitch;
-            const lWallRight = ditchLeft;
-            const lWallLeft = lWallRight - p.wWall;
+            // Ditch (รางน้ำ) อยู่ฝั่งขวาของกำแพง
+            const ditchLeft = stemRight;
+            const wallLeft = ditchLeft + p.wUDitch;
+            const wallRight = wallLeft + p.wWall;
 
-            const wMinX = heelLeft - 1.5;
-            const wMaxX = stemRight + 1.5;
+            // ขอบเขตโลก (World bounds)
+            const wMinX = -1.5;
+            const wMaxX = Math.max(heelRight, wallRight) + 2.0;
             const wMinY = -2.5;
             const wMaxY = H + 0.8;
             
@@ -489,6 +501,7 @@
                 ctx.strokeRect(px, py, pw, ph);
             };
 
+            // Ground dashed line (y=0)
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1;
             ctx.setLineDash([6, 4]);
@@ -498,28 +511,30 @@
             ctx.stroke();
             ctx.setLineDash([]);
 
+            // Soil fill (ดินอยู่ฝั่งขวาของกำแพง)
             ctx.fillStyle = 'rgba(214,211,209,0.50)';
-            ctx.fillRect(nx(wMinX), ny(H), nx(stemLeft) - nx(wMinX), ny(0) - ny(H));
+            ctx.fillRect(nx(stemRight), ny(H), nx(wMaxX) - nx(stemRight), ny(0) - ny(H));
             
+            // Soil surface line (เส้นผิวดินฝั่งขวา)
             ctx.strokeStyle = '#a8a29e';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(nx(wMinX), ny(H));
-            ctx.lineTo(nx(lWallLeft), ny(H));
+            ctx.moveTo(nx(wallRight), ny(H));
+            ctx.lineTo(nx(wMaxX), ny(H));
             ctx.stroke();
 
             // Piles
             ctx.lineWidth = 7;
             ctx.lineCap = 'round';
-            // Back pile (Orange)
+            // Back pile (Orange) - ฝั่งดิน (ขวา)
             ctx.strokeStyle = '#f97316';
             ctx.beginPath();
-            ctx.moveTo(nx(-p.x_back),  ny(0)); ctx.lineTo(nx(-p.x_back),  ny(-2.2));
+            ctx.moveTo(nx(p.x_back),  ny(0)); ctx.lineTo(nx(p.x_back),  ny(-2.2));
             ctx.stroke();
-            // Front pile (Blue)
+            // Front pile (Blue) - ฝั่งกำแพง (ซ้าย)
             ctx.strokeStyle = '#3b82f6';
             ctx.beginPath();
-            ctx.moveTo(nx(-p.x_front), ny(0)); ctx.lineTo(nx(-p.x_front), ny(-2.2));
+            ctx.moveTo(nx(p.x_front), ny(0)); ctx.lineTo(nx(p.x_front), ny(-2.2));
             ctx.stroke();
             ctx.lineCap = 'square';
 
@@ -528,9 +543,10 @@
             }
 
             drawRect(stemLeft, 0, p.wStem, H);
-            drawRect(lWallLeft, baseBottomY, p.wWall + p.wUDitch, p.tUBase);
-            drawRect(lWallLeft, ditchFloorY, p.wWall, p.hWall);
+            drawRect(ditchLeft, baseBottomY, p.wUDitch + p.wWall, p.tUBase);
+            drawRect(wallLeft, ditchFloorY, p.wWall, p.hWall);
 
+            // Water
             if (p.hWater > 0) {
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
                 let actualWaterH = Math.min(p.hWater, p.hWall);
@@ -539,26 +555,210 @@
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(nx(ditchLeft), ny(waterTopY));
-                ctx.lineTo(nx(ditchRight),  ny(waterTopY));
+                ctx.lineTo(nx(wallLeft),  ny(waterTopY));
                 ctx.stroke();
             }
 
-            const drawLabel = (x, y, text) => {
+            // Draw Toe Point (จุดหมุน)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(nx(0), ny(0), 5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            const drawLabel = (x, y, text, color='#0f172a', bg='rgba(255,255,255,0.88)') => {
                 ctx.font = '11px Prompt, sans-serif';
                 const tw = ctx.measureText(text).width;
-                ctx.fillStyle = 'rgba(255,255,255,0.88)';
+                ctx.fillStyle = bg;
                 ctx.fillRect(nx(x) - tw/2 - 4, ny(y) - 9, tw + 8, 18);
-                ctx.fillStyle = '#0f172a';
+                ctx.fillStyle = color;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(text, nx(x), ny(y));
             };
 
-            drawLabel(lWallLeft + p.wWall/2, ditchFloorY + p.hWall/2, 'Wall');
+            drawLabel(wallLeft + p.wWall/2, ditchFloorY + p.hWall/2, 'Wall');
             drawLabel(ditchLeft + p.wUDitch/2, baseBottomY + p.tUBase/2, 'Base');
             drawLabel(stemLeft + p.wStem/2, H/2 - 0.5, 'Stem');
             if (p.tHeel > 0) drawLabel(heelLeft + p.lHeel/2, p.tHeel/2, 'Heel');
-            if (p.lPile > 0) drawLabel((-p.x_back - p.x_front)/2, -1.1, `${p.lPile}m`);
+            if (p.lPile > 0) drawLabel((p.x_back + p.x_front)/2, -1.1, `${p.lPile}m`);
+            
+            // Label Toe Point
+            drawLabel(0, -0.4, 'Toe (จุดหมุน)', '#ef4444', 'rgba(255,255,255,0.9)');
+        }
+
+        function drawOverallBehavior(p) {
+            const canvas = document.getElementById('overallCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 450;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const pad = 40;
+            const stemLeft = 0;
+            const stemRight = p.wStem;
+            const heelLeft = stemRight;
+            const heelRight = stemRight + p.lHeel;
+            const H = p.H;
+            const ditchFloorY = H - p.hWall;
+            const baseBottomY = ditchFloorY - p.tUBase;
+            const ditchLeft = stemRight;
+            const wallLeft = ditchLeft + p.wUDitch;
+            const wallRight = wallLeft + p.wWall;
+
+            const wMinX = -2.0;
+            const wMaxX = Math.max(heelRight, wallRight) + 3.0;
+            const wMinY = -3.5; 
+            const wMaxY = Math.max(H + 2.5, p.y_net + 1.5); 
+
+            const wW = wMaxX - wMinX;
+            const wH = wMaxY - wMinY;
+            const newScale = Math.min((canvas.width - pad * 2) / wW, (canvas.height - pad * 2) / wH);
+            const newOffX = (canvas.width - (wW * newScale)) / 2 - (wMinX * newScale);
+            const newOffY = (canvas.height - (wH * newScale)) / 2 + (wMaxY * newScale);
+
+            const nx = (val) => newOffX + val * newScale;
+            const ny = (val) => newOffY - val * newScale;
+
+            // Draw Ground Level
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 6]);
+            ctx.beginPath();
+            ctx.moveTo(nx(wMinX), ny(H));
+            ctx.lineTo(nx(wMaxX), ny(H));
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.font = 'bold 12px Prompt';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'right';
+            ctx.fillText('ระดับดิน', nx(wMaxX) - 10, ny(H) + 15);
+
+            // Draw Wall Outline
+            ctx.fillStyle = '#f1f5f9';
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            
+            // Stem
+            ctx.fillRect(nx(stemLeft), ny(H), (stemRight - stemLeft) * newScale, ny(0) - ny(H));
+            ctx.strokeRect(nx(stemLeft), ny(H), (stemRight - stemLeft) * newScale, ny(0) - ny(H));
+            // Heel
+            if (p.tHeel > 0) {
+                ctx.fillRect(nx(heelLeft), ny(p.tHeel), (heelRight - heelLeft) * newScale, ny(0) - ny(p.tHeel));
+                ctx.strokeRect(nx(heelLeft), ny(p.tHeel), (heelRight - heelLeft) * newScale, ny(0) - ny(p.tHeel));
+            }
+            // Base
+            ctx.fillRect(nx(ditchLeft), ny(ditchFloorY), (wallRight - ditchLeft) * newScale, ny(baseBottomY) - ny(ditchFloorY));
+            ctx.strokeRect(nx(ditchLeft), ny(ditchFloorY), (wallRight - ditchLeft) * newScale, ny(baseBottomY) - ny(ditchFloorY));
+            // Wall
+            ctx.fillRect(nx(wallLeft), ny(H), (wallRight - wallLeft) * newScale, ny(ditchFloorY) - ny(H));
+            ctx.strokeRect(nx(wallLeft), ny(H), (wallRight - wallLeft) * newScale, ny(ditchFloorY) - ny(H));
+
+            // Helper Arrow Function
+            const drawArrow = (fromX, fromY, toX, toY, color, isDashed=false) => {
+                const headlen = 12;
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 3;
+                if(isDashed) ctx.setLineDash([6, 6]); else ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(toX, toY);
+                ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+                ctx.lineTo(toX, toY);
+                ctx.fill();
+            };
+
+            // Draw Sigma W (Green, Down)
+            const wColor = '#10b981'; // Emerald 500
+            drawArrow(nx(p.x_res), ny(wMaxY - 0.5), nx(p.x_res), ny(0.2), wColor, true);
+            ctx.fillStyle = wColor;
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px Prompt';
+            ctx.fillText(`ΣW = ${formatNum(p.totalW)} kg`, nx(p.x_res), ny(wMaxY - 0.5) - 20);
+            ctx.font = '12px Prompt';
+            ctx.fillText(`(x̄_net = ${formatNum(p.x_res)}m)`, nx(p.x_res), ny(wMaxY - 0.5) - 5);
+
+            // Draw Sigma P (Blue, Left)
+            const pColor = '#3b82f6'; // Blue 500
+            drawArrow(nx(wMaxX - 0.5), ny(p.y_net), nx(wallRight + 0.2), ny(p.y_net), pColor, false);
+            ctx.fillStyle = pColor;
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 14px Prompt';
+            ctx.fillText(`ΣP = ${formatNum(p.totalP)} kg`, nx(wMaxX - 1.5), ny(p.y_net) - 20);
+            ctx.font = '12px Prompt';
+            ctx.fillText(`(ȳ = ${formatNum(p.y_net)}m)`, nx(wMaxX - 1.5), ny(p.y_net) - 5);
+
+            // Draw Pile Reactions
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            const drawReaction = (x, R, label, color, align) => {
+                // Draw Pile Body
+                ctx.strokeStyle = color;
+                ctx.setLineDash([]);
+                ctx.beginPath(); ctx.moveTo(nx(x), ny(0)); ctx.lineTo(nx(x), ny(-2)); ctx.stroke();
+                
+                let textX = nx(x);
+                if (align === 'left') {
+                    ctx.textAlign = 'left';
+                    textX = nx(x) + 8;
+                } else if (align === 'right') {
+                    ctx.textAlign = 'right';
+                    textX = nx(x) - 8;
+                } else {
+                    ctx.textAlign = 'center';
+                }
+
+                // Draw Reaction Arrow
+                if (R >= 0) {
+                    drawArrow(nx(x), ny(-3.2), nx(x), ny(-1.0), color, false);
+                    ctx.fillStyle = color;
+                    ctx.font = 'bold 12px Prompt';
+                    ctx.fillText(`${label} = ${formatNum(Math.abs(R))} t (กด)`, textX, ny(-3.4));
+                } else {
+                    drawArrow(nx(x), ny(-1.0), nx(x), ny(-3.2), color, false);
+                    ctx.fillStyle = color;
+                    ctx.font = 'bold 12px Prompt';
+                    ctx.fillText(`${label} = ${formatNum(Math.abs(R))} t (ถอน)`, textX, ny(-3.4));
+                }
+            };
+            drawReaction(p.x_back, p.R_back, 'R_back', '#f97316', 'left'); // Orange 500 (ขยับข้อความไปทางขวา)
+            drawReaction(p.x_front, p.R_front, 'R_front', '#3b82f6', 'right'); // Blue 500 (ขยับข้อความไปทางซ้าย)
+
+            // Draw x_res dimension at Toe
+            ctx.strokeStyle = '#d97706'; // Yellow 600
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(nx(0), ny(0)); ctx.lineTo(nx(0), ny(-0.8)); // Toe ref (ลากเส้นประลงมาให้ยาวขึ้น)
+            ctx.moveTo(nx(p.x_res), ny(0.2)); ctx.lineTo(nx(p.x_res), ny(-0.8)); // x_res ref
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(nx(0), ny(-0.5)); ctx.lineTo(nx(p.x_res), ny(-0.5)); // ขยับเส้นบอกระยะลงมา
+            ctx.stroke();
+            // ticks
+            ctx.beginPath(); ctx.moveTo(nx(0), ny(-0.45)); ctx.lineTo(nx(0), ny(-0.55)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(nx(p.x_res), ny(-0.45)); ctx.lineTo(nx(p.x_res), ny(-0.55)); ctx.stroke();
+            
+            ctx.fillStyle = '#d97706';
+            ctx.font = 'bold 12px Prompt';
+            
+            // ขยับตัวหนังสือไปด้านซ้ายของเส้นบอกระยะ เพื่อไม่ให้ทับเส้นประ
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle'; 
+            ctx.fillText(`x̄_net = ${formatNum(p.x_res, 3)}m`, Math.min(nx(0), nx(p.x_res)) - 8, ny(-0.5)); 
+            
+            ctx.textAlign = 'center'; // รีเซ็ตค่า
+            ctx.textBaseline = 'alphabetic'; // รีเซ็ตค่าเพื่อไม่ให้กระทบส่วนอื่น
         }
 
         function formatNum(val, dec = 2) {
@@ -807,6 +1007,7 @@
 
             const Hreq = 1.5 * totalP;
             const shearTons = (Hreq / 2) / 1000;
+            const y_net = totalP > 0 ? totalMo / totalP : 0;
 
             function updatePileUI(idPrefix, loadVal) {
                 const valEl = document.getElementById(idPrefix + '_val');
@@ -831,6 +1032,11 @@
 
             drawVisualization({
                 H, tHeel, lHeel, wStem, wUDitch, tUBase, wWall, hWall, hWater, lPile, x_back, x_front
+            });
+
+            drawOverallBehavior({
+                H, tHeel, lHeel, wStem, wUDitch, tUBase, wWall, hWall, hWater, lPile, 
+                x_back, x_front, x_res, y_net, totalW, totalP, R_front, R_back
             });
         }
 
