@@ -77,7 +77,6 @@
                     <span class="font-semibold text-base md:hidden">คำนวณเสถียรภาพกำแพงกันดิน</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span class="bg-slate-700 text-slate-300 text-xs px-3 py-1 rounded-full font-medium shadow-sm hidden sm:inline-block">แอปพลิเคชันจำลองคำนวณสด</span>
                     <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded-full font-medium shadow-sm transition-colors flex items-center">
                         <i class="fa-solid fa-print mr-2"></i> พิมพ์รายงาน (A4)
                     </button>
@@ -178,7 +177,7 @@
                         <h4 class="font-semibold text-xs text-slate-400 uppercase tracking-wider mb-3">3. ระยะห่างเชิงพิกัด</h4>
                         <div class="space-y-3 print:grid print:grid-cols-3 print:gap-4 print:space-y-0">
                             <div>
-                                <label class="block text-xs text-slate-600 mb-1 font-medium">ระยะช่วงตอม่อ (L) [ม.]</label>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">ระยะห่างเสาเข็มตามแนวยาว (L) [ม.]</label>
                                 <input type="number" id="L" value="1.00" step="0.1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none print:border-slate-300 print:bg-slate-50 print:py-1" />
                             </div>
                             <div>
@@ -973,6 +972,7 @@
             const M3 = P3 * y3;
             const M4 = P4 * y4;
             const totalMo = M1 + M3 + M4;
+            const y_net = totalP > 0 ? totalMo / totalP : 0;
 
             document.getElementById('tbl_f_p1').innerText = formatNum(P1);
             document.getElementById('tbl_a_p1').innerText = formatNum(y1, 3);
@@ -1196,8 +1196,6 @@
                     </p>
                 </div>
             `;
-
-            const y_net = totalP > 0 ? totalMo / totalP : 0;
 
             function updatePileUI(idPrefix, loadVal) {
                 const valEl = document.getElementById(idPrefix + '_val');
